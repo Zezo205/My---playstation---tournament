@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بطولة البلايستيشن</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-image: url('https://spc.unk/ecVHAVRkYtF9i3al9iooVHVj');
+            background-size: cover;
+            background-position: center;
+            margin: 0;
+            padding: 20px;
+            color: #ffffff;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        h2 {
+            text-align: center;
+            color: #ffcc00;
+            margin-bottom: 20px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            border-color: #ffcc00;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #ffcc00;
+            color: black;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #e6b800;
+            transform: translateY(-2px);
+        }
+        #matches, #upcomingMatches, #stats {
+            margin-top: 20px;
+            color: #ffffff;
+        }
+        .hidden {
+            display: none;
+        }
+        p {
+            text-align: center;
+            margin: 10px 0;
+        }
+        a {
+            color: #ffcc00;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .player-image {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 id="formTitle">تسجيل الدخول</h2>
+
+        <div id="loginForm">
+            <input type="text" placeholder="اسم المستخدم" id="username">
+            <input type="password" placeholder="كلمة المرور" id="password">
+            <button onclick="login()">تسجيل الدخول</button>
+            <p>ليس لديك حساب؟ <a href="#" onclick="showRegisterForm()">إنشاء حساب جديد</a></p>
+        </div>
+
+        <div id="registerForm" class="hidden">
+            <input type="text" placeholder="اسم المستخدم" id="newUsername">
+            <input type="password" placeholder="كلمة المرور" id="newPassword">
+            <select id="tournamentType">
+                <option value="individual">بطولة فردية</option>
+                <option value="teams">بطولة فرق</option>
+            </select>
+            <select id="playerCount">
+                <option value="128">بطولة 128 لاعب</option>
+                <option value="64">بطولة 64 لاعب</option>
+            </select>
+            <button onclick="register()">إنشاء حساب</button>
+            <p>لديك حساب بالفعل؟ <a href="#" onclick="showLoginForm()">تسجيل الدخول</a></p>
+        </div>
+
+        <div id="participantSection" class="hidden">
+            <h2>تسجيل المشاركين</h2>
+            <input type="text" placeholder="اسم اللاعب" id="playerName">
+            <button onclick="registerParticipant()">تسجيل</button>
+            <button onclick="organizeTournament()">تنظيم البطولة</button>
+            <div id="matches"></div>
+            <div id="upcomingMatches"></div>
+            <div id="stats"></div>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/Cristiano_Ronaldo_2018.jpg" alt="رونالدو" class="player-image">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/8e/Lionel_Messi_20180626.jpg" alt="ميسي" class="player-image">
+            <p>رسوم الاشتراك: 50 جنيه.</p>
+        </div>
+
+        <div id="userSection" class="hidden">
+            <h2>المباريات القادمة وحالات اللاعب</h2>
+            <div id="upcomingMatchesUser"></div>
+            <div id="statsUser"></div>
+        </div>
+    </div>
+
+    <script>
+        let participants = [];
+        let accounts = {}; // لتخزين بيانات الحسابات
+        let playerStats = {}; // لتتبع إحصائيات اللاعبين
+
+        function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            if (accounts[username] && accounts[username].password === password) {
+                alert("تم تسجيل الدخول بنجاح!");
+                showUserSection(username);
+            } else {
+                alert("اسم المستخدم أو كلمة المرور غير صحيحة.");
+            }
+        }
+
+        function showUserSection(username) {
+            document.getElementById("loginForm").classList.add("hidden");
+            document.getElementById("participantSection").classList.add("hidden");
+            document.getElementById("userSection").classList.remove("hidden");
+            displayUpcomingMatches(); // عرض المباريات القادمة
+            displayStats(username); // عرض إحصائيات اللاعب
+        }
+
+        function register() {
+            const username = document.getElementById("newUsername").value;
+            const password = document.getElementById("newPassword").value;
+            const tournamentType = document.getElementById("tournamentType").value;
+            const playerCount = document.getElementById("playerCount").value;
+
+            if (accounts[username]) {
+                alert("اسم المستخدم موجود بالفعل.");
+            } else {
+                accounts[username] = { password: password, tournamentType, playerCount };
+                playerStats[username] = { wins: 0, draws: 0, losses: 0 }; // تهيئة إحصائيات اللاعب
+                alert("تم إنشاء الحساب بنجاح!");
+                document.getElementById("newUsername").value = '';
+                document.getElementById("newPassword").value = '';
+                showLoginForm();
+            }
+        }
+
+        function showRegisterForm() {
+            document.getElementById("loginForm").classList.add("hidden");
+            document.getElementById("registerForm").classList.remove("hidden");
+            document.getElementById("formTitle").innerText = "إنشاء حساب جديد";
+        }
+
+        function showLoginForm() {
+            document.getElementById("registerForm").classList.add("hidden");
+            document.getElementById("loginForm").classList.remove("hidden");
+            document.getElementById("formTitle").innerText = "تسجيل الدخول";
+        }
+
+        function registerParticipant() {
+            const name = document.getElementById("playerName").value;
+            if (participants.length < 128) {
+                participants.push(name);
+                playerStats[name] = { wins: 0, draws: 0, losses: 0 }; // تهيئة إحصائيات اللاعب
+                alert("تم تسجيلك بنجاح!");
+                document.getElementById("playerName").value = ''; // مسح حقل الإدخال
+            } else {
+                alert("لقد اكتمل عدد المشاركين.");
+            }
+        }
+
+        function organizeTournament() {
+            let matches = [];
+            for (let i = 0; i < participants.length; i += 2) {
+                if (participants[i + 1]) {
+                    matches.push(`${participants[i]} ضد ${participants[i + 1]}`);
+                }
+            }
+            document.getElementById("matches").innerHTML = "<h3>المباريات:</h3><ul>" + matches.map(match => `<li>${match}</li>`).join('') + "</ul>";
+            displayUpcomingMatches(); // تحديث موعد المباريات
+        }
+
+        function displayUpcomingMatches() {
+            const today = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
+            const matchDate = tomorrow.toLocaleDateString('ar-EG'); // تاريخ الغد
+
+            document.getElementById("upcomingMatches").innerHTML = `
+                <h3>المباريات القادمة:</h3>
+                <p>المباريات ستقام يوم ${matchDate}</p>
+            `;
+        }
+
+        function displayUpcomingMatches() {
+            const today = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
+            const matchDate = tomorrow.toLocaleDateString('ar-EG'); // تاريخ الغد
+
+            document.getElementById("upcomingMatchesUser").innerHTML = `
+                <h3>المباريات القادمة:</h3>
+                <p>المباريات ستقام يوم ${matchDate}</p>
+            `;
+        }
+
+        function displayStats(username) {
+            const stats = playerStats[username];
+            document.getElementById("statsUser").innerHTML = `
+                <h3>إحصائيات اللاعب:</h3>
+                <p>عدد الانتصارات: ${stats.wins}</p>
+                <p>عدد التعادلات: ${stats.draws}</p>
+                <p>عدد الهزائم: ${stats.losses}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
+  <head><link rel="manifest" href="manifest.json"></head>
